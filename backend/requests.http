@@ -1,0 +1,2 @@
+GET http://127.0.0.1:3000/api/employees/detail?name=John Smith
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3NTE1MzIwMjQsImV4cCI6MTc1MTYxODQyNH0.FOr9MAibRZ-FS-RP4L-laQ-crZAZuhh7QkUyV5kcJu0

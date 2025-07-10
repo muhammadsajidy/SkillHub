@@ -65,6 +65,7 @@ export async function getImportantEmployeeDetails(req, res) {
     try {
         const result = await pool.query(
             `SELECT 
+                e.emp_id,
                 e.emp_name,
                 d.dept_name,
                 ARRAY_AGG(DISTINCT s.skill_name) AS skills,
@@ -93,4 +94,44 @@ export async function getImportantEmployeeDetails(req, res) {
         console.error(error);
         res.status(500).json({ message: "Error fetching data" });
     };
+};
+
+export async function getEmployeesBySkill(req, res) {
+  const { skillId, year } = req.query;
+  const yearFilter = year && year !== "all" ? `AND se.year = ${parseInt(year)}` : "";
+
+  try {
+    const result = await pool.query(
+      `
+      SELECT
+        e.emp_name,
+        ROUND(AVG(se.score), 2) AS score,
+        s.skill_name,
+        s.skill_id,
+        se.quarter,
+        se.year
+      FROM
+        Employee e
+      JOIN
+        SkillEvaluation se ON e.emp_id = se.emp_id
+      JOIN
+        Skill s ON se.skill_id = s.skill_id
+      WHERE 
+        s.skill_id = $1
+        ${yearFilter}
+      GROUP BY e.emp_name, s.skill_name, s.skill_id, se.quarter, se.year
+      ORDER BY e.emp_name, se.quarter;
+      `,
+      [skillId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "No results found" });
+    }
+
+    return res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Database error" });
+  }
 };

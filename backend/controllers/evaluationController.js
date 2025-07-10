@@ -12,7 +12,7 @@ export async function getSkillEvaluation(req, res) {
     try {
         const query = `
             SELECT 
-                e.emp_name, d.dept_name, s.skill_name, se.skill_level, se.score, se.max_score, se.quarter, se.year
+                se.eval_id, e.emp_name, d.dept_name, s.skill_name, se.skill_level, se.score, se.max_score, se.quarter, se.year
             FROM
                 Employee e
             JOIN
@@ -45,7 +45,7 @@ export async function searchSkillEvaluation(req, res) {
 
     let query = `
     SELECT 
-        e.emp_name, d.dept_name, s.skill_name, se.score, se.max_score, se.quarter, se.year, se.comment, se.eval_id
+        se.eval_id, e.emp_name, d.dept_name, s.skill_name, se.score, se.max_score, se.quarter, se.year, se.comment, se.eval_id, se.skill_level
     FROM
         Employee e
     JOIN
@@ -109,32 +109,30 @@ export async function addSkillEvaluation(req, res) {
 };
 
 export async function updateSkillEvaluation(req, res) {
-    const { empId, skillId } = req.query;
-    const { score, quarter, year, comment } = req.body;
-    const commentValue = comment ?? null;
-    try {
-        const result = await pool.query(
-        `UPDATE SkillEvaluation
-            SET score   = $1,
-                quarter = $2,
-                year    = $3,
-                comment = $4
-            WHERE emp_id  = $5
-            AND skill_id = $6
-            AND quarter = $2
-            AND year = $3`,
-        [score, quarter, year, commentValue, parseInt(empId, 10), parseInt(skillId, 10)]
-        );
+  const { evalId } = req.params; 
+  const { score, quarter, year, comment } = req.body;
+  const commentValue = comment ?? null;
 
-        if (result.rowCount === 0) {
-            return res.status(404).json({ message: "No matching evaluation found" });
-        };
+  try {
+    const result = await pool.query(
+      `UPDATE SkillEvaluation
+       SET score = $1,
+           quarter = $2,
+           year = $3,
+           comment = $4
+       WHERE eval_id = $5`,
+      [score, quarter, year, commentValue, parseInt(evalId, 10)]
+    );
 
-        return res.status(200).json({ message: "Employee details updated successfully" })
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Database Error" });
-    };
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "No matching evaluation found" });
+    }
+
+    return res.status(200).json({ message: "Evaluation updated successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Database Error" });
+  }
 };
 
 export async function removeSkillEvaluation(req, res) {
@@ -152,4 +150,15 @@ export async function removeSkillEvaluation(req, res) {
         console.error(error);
         res.status(500).json({ message: "Database Error" });
     };
+};
+
+export async function getEvaluationYears(req, res) {
+  try {
+    const result = await pool.query(`SELECT DISTINCT year FROM SkillEvaluation ORDER BY year DESC`);
+    const years = result.rows.map(row => row.year); // keep as integers
+    res.status(200).json(years);
+  } catch (error) {
+    console.error("Error fetching years:", error);
+    res.status(500).json({ error: "Database error" });
+  }
 };

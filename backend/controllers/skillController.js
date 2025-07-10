@@ -6,12 +6,13 @@ export async function getAllSkills(req, res) {
             `SELECT 
                 s.skill_id,
                 s.skill_name,
-                COALESCE(s.skill_category, 'Uncategorized') AS skill_category,
+                COALESCE(sc.category_name, 'Uncategorized') AS skill_category,
                 COUNT(DISTINCT se.emp_id) AS employee_count
             FROM Skill s
+            LEFT JOIN Skill_Category sc ON s.category_id = sc.category_id
             LEFT JOIN SkillEvaluation se ON s.skill_id = se.skill_id
-            GROUP BY s.skill_id, s.skill_name, s.skill_category
-            ORDER BY s.skill_category, s.skill_name;`
+            GROUP BY s.skill_id, s.skill_name, sc.category_name
+            ORDER BY skill_category, s.skill_name;`
         );
 
         if (result.rowCount === 0) {
@@ -26,10 +27,10 @@ export async function getAllSkills(req, res) {
 };
 
 export async function addSkill(req, res) {
-    const { skillName, skillCategory } = req.body;
+    const { skillName, category_id } = req.body;
     try {
         await pool.query(
-            `INSERT INTO Skill (skill_name, skill_category)
+            `INSERT INTO Skill (skill_name, category_id)
             VALUES ($1, $2)
             ON CONFLICT (skill_name) DO NOTHING;`,
             [skillName, skillCategory]
@@ -49,7 +50,7 @@ export async function removeSkill(req, res) {
 
     if (isNaN(parsedSkillId)) {
         return res.status(400).json({ message: "Invalid skill ID" });
-    }
+    };
 
     try {
         const result = await pool.query(
@@ -59,7 +60,7 @@ export async function removeSkill(req, res) {
 
         if (result.rowCount === 0) {
             return res.status(404).json({ message: "Skill not found" });
-        }
+        };
 
         return res.status(200).json({ message: "Skill deleted successfully" });
     } catch (error) {
@@ -120,6 +121,32 @@ export async function getAvgSkillScore(req, res) {
             FROM 
                 SkillEvaluation se;`
         );
+
+        return res.status(200).json(result.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Unable to fetch data" });
+    };
+};
+
+export async function getEmployeeSkills(req, res) {
+    const { empId } = req.query;
+
+    try {
+        const result = await pool.query(
+            `SELECT 
+                s.skill_id, s.skill_name
+            FROM SkillEvaluation se
+            JOIN Skill s ON se.skill_id = s.skill_id
+            WHERE se.emp_id = $1
+            GROUP BY s.skill_id, s.skill_name
+            ORDER BY s.skill_name;`,
+            [empId]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: "No results available" });
+        };
 
         return res.status(200).json(result.rows);
     } catch (error) {

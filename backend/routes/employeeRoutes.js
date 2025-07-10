@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getAllEmployees, getOneEmployee, getRecentEmployeeAssessments, getImportantEmployeeDetails } from "../controllers/employeeController.js";
+import { getAllEmployees, getOneEmployee, getRecentEmployeeAssessments, getImportantEmployeeDetails, getEmployeesBySkill } from "../controllers/employeeController.js";
 import authenticateToken from "../middleware/authMiddleware.js";
 
 const employeeRouter = Router();
@@ -8,5 +8,6 @@ employeeRouter.get("/all", authenticateToken, getAllEmployees);
 employeeRouter.get("/search", authenticateToken, getOneEmployee);
 employeeRouter.get("/recent", authenticateToken, getRecentEmployeeAssessments);
 employeeRouter.get("/main", authenticateToken, getImportantEmployeeDetails);
+employeeRouter.get("/by-skill", authenticateToken, getEmployeesBySkill);
 
 export default employeeRouter;

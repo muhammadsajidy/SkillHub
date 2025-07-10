@@ -74,7 +74,7 @@ export default function Layout({ children }) {
   const drawerContent = (
     <List>
       {navLinks.map((link) => (
-        <ListItem button key={link.text} onClick={() => navigate(link.link)} sx={{ cursor: "pointer" }}>
+        <ListItem button="true" key={link.text} onClick={() => navigate(link.link)} sx={{ cursor: "pointer" }}>
           <ListItemIcon>{link.icon}</ListItemIcon>
           <ListItemText primary={link.text} />
         </ListItem>

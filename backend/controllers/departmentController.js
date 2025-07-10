@@ -34,3 +34,19 @@ export async function getDepartmentDetails(req, res) {
         return res.status(500).json({ error: "Error fetching data" });
     };
 };
+
+export async function addDepartmentDetails(req, res) {
+    const { dept_name } = req.body;
+    try {
+        await pool.query(
+            `INSERT INTO Department (dept_name)
+            VALUES ($1);`,
+            [dept_name]
+        );
+
+        return res.status(200).json({ message: "Department added successfully" });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Database error" });
+    };
+};

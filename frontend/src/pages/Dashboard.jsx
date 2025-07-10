@@ -20,7 +20,7 @@ export default function Dashboard() {
         average_score: "",
         max_score: ""
     });
-    const [chartData, setChartData] = useState([]);
+    // const [chartData, setChartData] = useState([]);
     const [recents, setRecents] = useState([]);
 
     useEffect(() => {
@@ -28,7 +28,7 @@ export default function Dashboard() {
         fetchSkillCount();
         fetchDeptCount();
         fetchAvgSkillLevel();
-        fetchGraphData();
+        // fetchGraphData();
         fetchRecentAssessments();
     }, []);
 
@@ -61,11 +61,11 @@ export default function Dashboard() {
         .catch((e) => console.log(e));
     };
 
-    const fetchGraphData = async() => {
-        await axios.get("/analytics/quarter-wise", { params: { year: 2025 } })
-        .then((res) => setChartData(res.data))
-        .catch((e) => console.error(e));
-    };
+    // const fetchGraphData = async() => {
+    //     await axios.get("/analytics/quarter-wise", { params: { year: 2025 } })
+    //     .then((res) => setChartData(res.data))
+    //     .catch((e) => console.error(e));
+    // };
 
     const fetchRecentAssessments = async () => {
         await axios.get("/employees/recent")
@@ -118,7 +118,7 @@ export default function Dashboard() {
                 </Card>
             </Box>
             <Box sx={{ width: "100%", display: "flex", flexDirection: { sm: "column", lg: "row" }, gap: 2 }}>
-                <Card variant="outlined" sx={{ width: { sm: "100%", lg: "65%" }, paddingX: 2, paddingY: 3, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                {/* <Card variant="outlined" sx={{ width: { sm: "100%", lg: "65%" }, paddingX: 2, paddingY: 3, display: "flex", flexDirection: "column", alignItems: "center" }}>
                     <Box sx={{ width: "100%", display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
                         <Typography variant="h5" fontWeight="bold" textAlign="left">Skill Level Over Time</Typography>
                         <Typography variant="h6">Year: {chartData[0]?.year}</Typography>
@@ -131,8 +131,8 @@ export default function Dashboard() {
                         <Legend align="right" />
                         <Tooltip />
                     </LineChart>
-                </Card>
-                <Card variant="outlined" sx={{ width: { sm: "100%", lg: "35%" }, display: "flex", flexDirection: "column", alignItems: "center", gap: 2, paddingBottom: 2 }}>
+                </Card> */}
+                <Card variant="outlined" sx={{ width: { sm: "100%", lg: "100%" }, display: "flex", flexDirection: "column", alignItems: "center", gap: 2, paddingBottom: 2 }}>
                     <Typography variant="h6" fontWeight="bold" textAlign="left" sx={{ marginX: 3, marginTop: 2, width: "90%" }}>Recent Assessments</Typography>
                     {recents.map((recent, index) => (
                         <Card key={index} variant="outlined" sx={{ width: "90%", padding: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>

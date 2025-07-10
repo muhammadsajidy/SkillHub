@@ -41,6 +41,10 @@ export default function Assessments() {
     score: "", quarter: "", year: "", comment: "" 
   });
 
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editData, setEditData] = useState(null);
+
+
   useEffect(() => {
     fetchEmployees();
     fetchDepartments();
@@ -80,6 +84,7 @@ export default function Assessments() {
       }
     })
     .then((res) => {
+      console.log(res.data.result);
       setResults(res.data?.result || []);
       const totalCount = res.data?.dataSize?.[0]?.count || 0;
       setPages(totalCount > 0 ? Math.ceil(totalCount / LIMIT) : 1);
@@ -165,6 +170,43 @@ export default function Assessments() {
     setOrderBy(property);
   };
 
+  const handleDelete = async (evalId) => {
+    await axios.delete(`/evaluations/remove/${evalId}`)
+    .then((res) => {
+      toast.success(res.data.message || "Evaluation deleted successfully!");
+      fetchSkillEvaluations(page);
+    }
+    ).catch((e) => {
+      console.error(e);
+      toast.error(e?.response.data.error);
+    });
+  };
+
+  const handleUpdate = async () => {
+    if (!editData) return;
+
+    try {
+      await axios.put(`/evaluations/update/${editData.eval_id}`, {
+        score: editData.score,
+        quarter: editData.quarter,
+        year: editData.year,
+        comment: editData.comment,
+      });
+
+      toast.success("Evaluation updated successfully");
+      setEditModalOpen(false);
+      setEditData(null);
+      fetchSkillEvaluations(page);
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Update failed");
+      console.error(e);
+    }
+  };
+
+  const handleEditClick = (detail) => {
+    setEditData({ ...detail });
+    setEditModalOpen(true);
+  };
 
   return (
     <Container disableGutters maxWidth={false} sx={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center" }}>
@@ -219,6 +261,7 @@ export default function Assessments() {
                   Year
                 </TableSortLabel>
               </TableCell>
+              <TableCell sx={{ fontSize: 15, color: "#748397" }} align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -232,6 +275,12 @@ export default function Assessments() {
                 <TableCell align="center">{detail?.max_score}</TableCell>
                 <TableCell align="center">{detail?.quarter}</TableCell>
                 <TableCell>{detail?.year}</TableCell>
+                <TableCell align="center">
+                  <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 1 }}>
+                    <Button variant="contained" size="small" sx={{ textTransform: "none" }} onClick={() => handleDelete(detail?.eval_id)}>Delete</Button>
+                    <Button variant="outlined" size="small" sx={{ textTransform: "none" }} onClick={() => handleEditClick(detail)}>Edit</Button>
+                  </Box>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -289,6 +338,82 @@ export default function Assessments() {
             <Button variant="outlined" fullWidth onClick={() => setModalOpen(false)} sx={{ textTransform: "none" }}>Cancel</Button>
             <Button variant="outlined" fullWidth onClick={resetForm} sx={{ textTransform: "none" }}>Clear</Button>
             <Button variant="contained" fullWidth onClick={handleSubmit} sx={{ bgcolor: "black", textTransform: "none" }}>Add</Button>
+          </Box>
+        </Box>
+      </Modal>
+
+      <Modal open={editModalOpen} onClose={() => setEditModalOpen(false)}>
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 500,
+            bgcolor: 'background.paper',
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 4,
+            maxHeight: '90vh',
+            overflowY: 'auto',
+          }}
+        >
+          <Typography variant="h6" gutterBottom>Edit Evaluation</Typography>
+
+          <TextField
+            fullWidth
+            margin="normal"
+            label="Score"
+            type="number"
+            value={editData?.score || ""}
+            onChange={(e) => setEditData({ ...editData, score: e.target.value })}
+          />
+
+          <FormControl fullWidth margin="normal">
+            <InputLabel>Quarter</InputLabel>
+            <Select
+              value={editData?.quarter || ""}
+              label="Quarter"
+              onChange={(e) => setEditData({ ...editData, quarter: e.target.value })}
+            >
+              <MenuItem value="Q1">Q1</MenuItem>
+              <MenuItem value="Q2">Q2</MenuItem>
+              <MenuItem value="Q3">Q3</MenuItem>
+              <MenuItem value="Q4">Q4</MenuItem>
+            </Select>
+          </FormControl>
+
+          <TextField
+            fullWidth
+            margin="normal"
+            label="Year"
+            type="number"
+            value={editData?.year || ""}
+            onChange={(e) => setEditData({ ...editData, year: e.target.value })}
+          />
+
+          <TextField
+            fullWidth
+            margin="normal"
+            label="Comment"
+            multiline
+            rows={3}
+            value={editData?.comment || ""}
+            onChange={(e) => setEditData({ ...editData, comment: e.target.value })}
+          />
+
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, mt: 2 }}>
+            <Button variant="outlined" fullWidth onClick={() => setEditModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              fullWidth
+              onClick={handleUpdate}
+              sx={{ bgcolor: 'black' }}
+            >
+              Update
+            </Button>
           </Box>
         </Box>
       </Modal>

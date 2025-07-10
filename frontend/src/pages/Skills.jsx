@@ -5,6 +5,7 @@ import {
   Button,
   Container,
   IconButton,
+  InputAdornment,
   Typography,
   Grid,
   Card,
@@ -17,6 +18,8 @@ import {
 } from "@mui/material";
 import { ToastContainer, toast } from "react-toastify";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import SearchIcon from "@mui/icons-material/Search";
+import SkillGraphView from "../components/SkillGraphView";
 
 const modalStyle = {
   position: "absolute",
@@ -40,9 +43,9 @@ export default function Skills() {
   const [skillCategory, setSkillCategory] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedSkill, setSelectedSkill] = useState(null);
-
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [newMaxScore, setNewMaxScore] = useState("");
+  const [selectedSkillForGraph, setSelectedSkillForGraph] = useState(null);
 
   useEffect(() => {
     fetchSkills();
@@ -54,19 +57,18 @@ export default function Skills() {
       groupByCategory(res.data);
     } catch (err) {
       console.error(err);
+      toast.error("Failed to fetch skills");
     }
   };
 
   const addSkill = async () => {
     try {
-      await axios.post("/skills/add", {
-        skillName,
-        skillCategory,
-      });
+      await axios.post("/skills/add", { skillName, skillCategory });
       fetchSkills();
       handleClose();
     } catch (err) {
       console.error("Error adding skill:", err);
+      toast.error("Failed to add skill");
     }
   };
 
@@ -94,6 +96,7 @@ export default function Skills() {
   };
 
   const handleMenuClick = (event, skill) => {
+    event.stopPropagation(); // Prevent card click
     setAnchorEl(event.currentTarget);
     setSelectedSkill(skill);
   };
@@ -104,11 +107,36 @@ export default function Skills() {
 
   const handleEditSkill = () => {
     if (!selectedSkill) return;
-
     setSkillName(selectedSkill.skill_name);
     setNewMaxScore("");
-    handleMenuClose();
     setEditModalOpen(true);
+    handleMenuClose();
+  };
+
+  const handleDeleteSkill = async () => {
+    try {
+      await axios.delete(`/skills/remove/${selectedSkill.skill_id}`);
+      toast.success("Skill deleted successfully");
+      fetchSkills();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Error deleting skill");
+    } finally {
+      handleMenuClose();
+      setSelectedSkill(null);
+    }
+  };
+
+  const handleEditSkillLevel = async () => {
+    if (!selectedSkill) return;
+    try {
+      await axios.put(`/skills/edit/${selectedSkill.skill_id}`, { max_score: newMaxScore });
+      toast.success("Skill level updated successfully");
+      fetchSkills();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Error updating skill level");
+    } finally {
+      handleEditModalClose();
+    }
   };
 
   const handleEditModalClose = () => {
@@ -117,147 +145,144 @@ export default function Skills() {
     setNewMaxScore("");
   };
 
-  const handleDeleteSkill = async () => {
-    await axios.delete(`/skills/remove/${selectedSkill.skill_id}`)
-      .then((res) => {
-        toast.success(res?.data.message || "Skill deleted successfully");
-        handleMenuClose();
-      })
-      .catch((err) => {
-        toast.error(err?.response?.data?.message || "Error deleting skill");
-        handleMenuClose();
-      });
-    fetchSkills();
+  const handleSkillCardClick = (skill) => {
+    setSelectedSkillForGraph(skill);
   };
 
-  const handleEditSkillLevel = async () => {
+  const handleGraphViewClose = () => {
+    setSelectedSkillForGraph(null);
+  };
+
+  const handleViewGraph = () => {
     if (!selectedSkill) return;
-    await axios.put(`/skills/edit/${selectedSkill.skill_id}`, { max_score: newMaxScore })
-    .then((res) => {
-      toast.success(res.data.message || "Skill level updated successfully");  
-      fetchSkills();
-      handleEditModalClose();
-    })
-    .catch((err) => {
-      toast.error(err?.response?.data?.message || "Error updating skill level");
-      handleEditModalClose();
-    });
+    setSelectedSkillForGraph(selectedSkill);
+    handleMenuClose();
   };
 
   return (
-    <Container
-      disableGutters
-      maxWidth={false}
-      sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 4 }}
-    >
-      <Box
-        sx={{
-          width: "100%",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <Box>
-          <Typography variant="h5" fontWeight="bold">Skills</Typography>
-          <Typography sx={{ color: "#64748b" }}>Manage and track skills across your organization</Typography>
-        </Box>
-        <Button variant="contained" size="small" sx={{ bgcolor: "black" }} onClick={handleOpen}>Add Skill</Button>
-      </Box>
+    <Container disableGutters maxWidth={false} sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 4 }}>
+      {selectedSkillForGraph ? (
+        <SkillGraphView skill={selectedSkillForGraph} onClose={handleGraphViewClose} />
+      ) : (
+        <>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Box>
+              <Typography variant="h5" fontWeight="bold">Skills</Typography>
+              <Typography sx={{ color: "#64748b" }}>Manage and track skills across your organization</Typography>
+            </Box>
+            <Button variant="contained" size="small" sx={{ bgcolor: "black" }} onClick={handleOpen}>
+              Add Skill
+            </Button>
+          </Box>
 
-      <Modal open={open} onClose={handleClose}>
-        <Box sx={modalStyle}>
-          <Typography variant="h6" fontWeight="bold">Add Skill</Typography>
           <TextField
-            label="Skill Name"
-            value={skillName}
-            onChange={(e) => setSkillName(e.target.value)}
+            placeholder="Search skills..."
+            variant="outlined"
             fullWidth
-          />
-          <TextField
-            label="Skill Category"
-            value={skillCategory}
-            onChange={(e) => setSkillCategory(e.target.value)}
-            fullWidth
-          />
-          <Stack direction="row" justifyContent="center" spacing={2} mt={2}>
-            <Button onClick={handleClose} variant="outlined" color="inherit">Cancel</Button>
-            <Button onClick={handleClear} variant="outlined" color="warning">Clear</Button>
-            <Button onClick={addSkill} variant="contained" color="primary">Add</Button>
-          </Stack>
-        </Box>
-      </Modal>
+            sx={{ width: { xs: "100%", lg: "55%" }, "& .MuiInputBase-root": { height: 40 } }}
+            onChange={(e) => {
+              const value = e.target.value.toLowerCase();
+              if (!value) return fetchSkills();
 
-      {Object.entries(groupedSkills).map(([category, skills]) => (
-        <Card key={category} variant="outlined">
-          <CardContent>
-            <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-              {category}
-            </Typography>
-            <Grid container spacing={2}>
-              {skills.map((skill) => (
-                <Grid key={skill.skill_id} size={{ xs: 12, md: 4 }}>
-                  <Card variant="outlined" sx={{ p: 2, width: "100%", ":hover": { bgcolor: "#f9fafb" } }}>
-                    <Box sx={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <Typography fontWeight="medium">{skill.skill_name}</Typography>
-                      <IconButton size="small" onClick={(e) => handleMenuClick(e, skill)}>
-                        <MoreVertIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
-                    <Typography fontSize={14} sx={{ color: "gray" }}>
-                      {skill.employee_count} employee{skill.employee_count !== 1 ? "s" : ""}
-                    </Typography>
-                  </Card>
+              const filtered = {};
+              Object.entries(groupedSkills).forEach(([category, skills]) => {
+                const matched = skills.filter(skill =>
+                  skill.skill_name.toLowerCase().includes(value)
+                );
+                if (matched.length > 0) filtered[category] = matched;
+              });
+              setGroupedSkills(filtered);
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              )
+            }}
+          />
+
+          {Object.entries(groupedSkills).map(([category, skills]) => (
+            <Card key={category} variant="outlined">
+              <CardContent>
+                <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>{category}</Typography>
+                <Grid container spacing={2}>
+                  {skills.map((skill) => (
+                    <Grid item xs={12} md={4} key={skill.skill_id}>
+                      <Card
+                        variant="outlined"
+                        sx={{ p: 2, ":hover": { bgcolor: "#f9fafb", cursor: "pointer" } }}
+                        onClick={() => handleSkillCardClick(skill)}
+                      >
+                        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <Typography fontWeight="medium">{skill.skill_name}</Typography>
+                          <IconButton size="small" onClick={(e) => handleMenuClick(e, skill)}>
+                            <MoreVertIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                        <Typography fontSize={14} sx={{ color: "gray" }}>
+                          {skill.employee_count || 0} employee{(skill.employee_count || 0) !== 1 ? "s" : ""}
+                        </Typography>
+                      </Card>
+                    </Grid>
+                  ))}
                 </Grid>
-              ))}
-            </Grid>
-          </CardContent>
-        </Card>
-      ))}
+              </CardContent>
+            </Card>
+          ))}
 
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-        anchorOrigin={{ vertical: "top", horizontal: "left" }}
-        transformOrigin={{ vertical: "top", horizontal: "right" }}
-        slotProps={{
-          paper: {
-            sx: {
-              boxShadow: "none",
-              border: "1px solid #e0e0e0",
-              minWidth: 120,
-            },
-          },
-        }}
-      >
-        <MenuItem onClick={handleEditSkill}>Edit</MenuItem>
-        <MenuItem onClick={handleDeleteSkill}>Delete</MenuItem>
-      </Menu>
+          <Modal open={open} onClose={handleClose}>
+            <Box sx={modalStyle}>
+              <Typography variant="h6" fontWeight="bold">Add Skill</Typography>
+              <TextField label="Skill Name" value={skillName} onChange={(e) => setSkillName(e.target.value)} fullWidth />
+              <TextField label="Skill Category" value={skillCategory} onChange={(e) => setSkillCategory(e.target.value)} fullWidth />
+              <Stack direction="row" justifyContent="center" spacing={2} mt={2}>
+                <Button onClick={handleClose} variant="outlined" color="inherit">Cancel</Button>
+                <Button onClick={handleClear} variant="outlined" color="warning">Clear</Button>
+                <Button onClick={addSkill} variant="contained" color="primary">Add</Button>
+              </Stack>
+            </Box>
+          </Modal>
 
-      <Modal open={editModalOpen} onClose={handleEditModalClose}>
-        <Box sx={modalStyle}>
-          <Typography variant="h6" fontWeight="bold">Edit Skill</Typography>
-          <TextField
-            label="Skill"
-            value={skillName}
-            fullWidth
-            slotProps={{ input: { readOnly: true } }}
-          />
-          <TextField
-            label="New Max Score"
-            type="number"
-            value={newMaxScore}
-            onChange={(e) => setNewMaxScore(e.target.value)}
-            fullWidth
-          />
-          <Stack direction="row" justifyContent="center" spacing={2} mt={2}>
-            <Button onClick={handleEditModalClose} variant="outlined" color="inherit">Cancel</Button>
-            <Button onClick={handleEditSkillLevel} variant="contained" color="primary">Update</Button>
-          </Stack>
-        </Box>
-      </Modal>
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+            anchorOrigin={{ vertical: "top", horizontal: "left" }}
+            transformOrigin={{ vertical: "top", horizontal: "right" }}
+            PaperProps={{
+              sx: {
+                boxShadow: "none",
+                border: "1px solid #e0e0e0",
+                minWidth: 120,
+              },
+            }}
+          >
+            <MenuItem onClick={handleEditSkill}>Edit</MenuItem>
+            <MenuItem onClick={handleDeleteSkill}>Delete</MenuItem>
+            <MenuItem onClick={handleViewGraph}>View Graph</MenuItem>
+          </Menu>
 
+          {/* Edit Skill Modal */}
+          <Modal open={editModalOpen} onClose={handleEditModalClose}>
+            <Box sx={modalStyle}>
+              <Typography variant="h6" fontWeight="bold">Edit Skill</Typography>
+              <TextField label="Skill" value={skillName} fullWidth InputProps={{ readOnly: true }} />
+              <TextField
+                label="New Max Score"
+                type="number"
+                value={newMaxScore}
+                onChange={(e) => setNewMaxScore(e.target.value)}
+                fullWidth
+              />
+              <Stack direction="row" justifyContent="center" spacing={2} mt={2}>
+                <Button onClick={handleEditModalClose} variant="outlined" color="inherit">Cancel</Button>
+                <Button onClick={handleEditSkillLevel} variant="contained" color="primary">Update</Button>
+              </Stack>
+            </Box>
+          </Modal>
+        </>
+      )}
       <ToastContainer position="top-right" hideProgressBar autoClose={500} />
     </Container>
   );

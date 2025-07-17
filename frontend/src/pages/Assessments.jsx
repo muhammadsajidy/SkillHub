@@ -219,7 +219,7 @@ export default function Assessments() {
       </Box>
 
       <Box sx={{ width: "100%", marginY: 3, display: "flex", alignItems: "center", flexWrap: { xs: "wrap", lg: "nowrap" }, gap: 2 }}>
-        <Autocomplete options={employees} getOptionLabel={(option) => option.emp_name} value={employees.find((emp) => emp.emp_id === selectedEmpId) || null} onChange={(_, newValue) => { setSelectedEmpId(newValue?.emp_id || ''); setEmpName(newValue?.emp_name || ''); setPage(1); }} renderInput={(params) => (<TextField {...params} placeholder="Search employees..." size="small" />)} sx={{ width: { xs: "100%", lg: "45%" } }} />
+        <Autocomplete options={employees} getOptionLabel={(option) => option.emp_name} value={employees.find((emp) => emp.emp_id === selectedEmpId) || null} onChange={(_, newValue) => { setSelectedEmpId(newValue?.emp_id || ''); setEmpName(newValue?.emp_name || ''); setPage(1); }} renderInput={(params) => (<TextField {...params} placeholder="Search employees..." size="small" />)} sx={{ width: { xs: "100%", lg: "50%" } }} />
         <FormControl sx={{ minWidth: { xs: "40%", sm: "41%", lg: 180} }} size="small">
           <InputLabel>Department</InputLabel>
           <Select value={selectedDept} label="Department" onChange={(e) => handleDeptChange(e.target.value)} MenuProps={{ PaperProps: { style: { maxHeight: 200, minHeight: 100, maxWidth: { xs: "30%" } } } }}>
@@ -277,8 +277,8 @@ export default function Assessments() {
                 <TableCell>{detail?.year}</TableCell>
                 <TableCell align="center">
                   <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 1 }}>
-                    <Button variant="contained" size="small" sx={{ textTransform: "none" }} onClick={() => handleDelete(detail?.eval_id)}>Delete</Button>
                     <Button variant="outlined" size="small" sx={{ textTransform: "none" }} onClick={() => handleEditClick(detail)}>Edit</Button>
+                    <Button variant="contained" size="small" sx={{ textTransform: "none" }} onClick={() => handleDelete(detail?.eval_id)}>Delete</Button>
                   </Box>
                 </TableCell>
               </TableRow>

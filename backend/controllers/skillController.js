@@ -27,19 +27,56 @@ export async function getAllSkills(req, res) {
 };
 
 export async function addSkill(req, res) {
-    const { skillName, category_id } = req.body;
+    const { skillName, skillCategory } = req.body;
+
+    if (!skillName || !skillCategory) {
+        return res.status(400).json({ message: "Skill name and category name are required." });
+    }
+
+    let client;
     try {
-        await pool.query(
-            `INSERT INTO Skill (skill_name, category_id)
-            VALUES ($1, $2)
-            ON CONFLICT (skill_name) DO NOTHING;`,
-            [skillName, skillCategory]
+        client = await pool.connect();
+
+        const categoryResult = await client.query(
+            `SELECT category_id FROM skill_category WHERE category_name = $1;`,
+            [skillCategory]
         );
 
-        return res.status(200).json({ message: "Skill added successfully" });
+        let categoryId;
+        if (categoryResult.rows.length > 0) {
+            categoryId = categoryResult.rows[0].category_id;
+        } else {
+            const newCategoryResult = await client.query(
+                `INSERT INTO skill_category (category_name) VALUES ($1) RETURNING category_id;`,
+                [skillCategory]
+            );
+            categoryId = newCategoryResult.rows[0].category_id;
+        }
+
+        const skillInsertResult = await client.query(
+            `INSERT INTO Skill (skill_name, category_id)
+            VALUES ($1, $2)
+            ON CONFLICT (skill_name) DO NOTHING
+            RETURNING skill_id;`,
+            [skillName, categoryId]
+        );
+
+        if (skillInsertResult.rowCount > 0) {
+            return res.status(201).json({
+                message: "Skill added successfully",
+                skill_id: skillInsertResult.rows[0].skill_id,
+                category_id: categoryId
+            });
+        } else {
+            return res.status(200).json({ message: "Skill already exists." });
+        }
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Unable to add skill" });
+        console.error("Error adding skill:", error);
+        res.status(500).json({ message: "Unable to add skill due to a server error." });
+    } finally {
+        if (client) {
+            client.release();
+        };
     };
 };
 

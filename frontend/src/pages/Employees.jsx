@@ -44,7 +44,6 @@ export default function Employees() {
   const fetchEmployees = async () => {
     try {
       const res = await axios.get("/employees/main");
-      console.log("Fetched employees:", res.data); // Debug log
       setAllEmployees(res.data);
       setEmployees(res.data);
     } catch (e) {
@@ -69,19 +68,16 @@ export default function Employees() {
   };
 
   const handleEmployeeCardClick = (employee) => {
-    console.log("Employee card clicked:", employee); // Debug log
     if (!employee?.emp_id) console.warn("emp_id missing for employee:", employee);
     setSelectedEmployeeForGraph(employee);
   };
 
   const handleGraphViewClose = () => {
-    console.log("Closing graph view"); // Debug log
     setSelectedEmployeeForGraph(null);
   };
 
   return (
     <Container disableGutters maxWidth={false} sx={{ width: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
-      {console.log("Rendering graph view, selectedEmployeeForGraph:", selectedEmployeeForGraph)} {/* Debug log */}
       {selectedEmployeeForGraph ? (
         <EmployeeGraphView employee={selectedEmployeeForGraph} onClose={handleGraphViewClose} />
       ) : (

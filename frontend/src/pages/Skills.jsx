@@ -56,8 +56,7 @@ export default function Skills() {
       const res = await axios.get("/skills/all");
       groupByCategory(res.data);
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to fetch skills");
+      toast.error(err?.response?.data.message || "Failed to fetch skills" );
     }
   };
 
@@ -67,9 +66,8 @@ export default function Skills() {
       fetchSkills();
       handleClose();
     } catch (err) {
-      console.error("Error adding skill:", err);
-      toast.error("Failed to add skill");
-    }
+      toast.error(err?.response?.data.message || "Failed to add skill");
+    };
   };
 
   const groupByCategory = (data) => {
@@ -96,7 +94,7 @@ export default function Skills() {
   };
 
   const handleMenuClick = (event, skill) => {
-    event.stopPropagation(); // Prevent card click
+    event.stopPropagation(); 
     setAnchorEl(event.currentTarget);
     setSelectedSkill(skill);
   };
@@ -208,10 +206,10 @@ export default function Skills() {
                 <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>{category}</Typography>
                 <Grid container spacing={2}>
                   {skills.map((skill) => (
-                    <Grid item xs={12} md={4} key={skill.skill_id}>
+                    <Grid size = {{ xs: 12, md: 4 }} key={skill.skill_id}>
                       <Card
                         variant="outlined"
-                        sx={{ p: 2, ":hover": { bgcolor: "#f9fafb", cursor: "pointer" } }}
+                        sx={{ p: 2, ":hover": { bgcolor: "#f9fafb", cursor: "pointer" }, width: "100%" }}
                         onClick={() => handleSkillCardClick(skill)}
                       >
                         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

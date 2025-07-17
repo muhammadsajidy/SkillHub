@@ -60,7 +60,6 @@ export default function SkillGraphView({ skill, onClose }) {
       const quarters = ["Q1", "Q2", "Q3", "Q4"];
 
       if (employees.length === 1) {
-        // Single employee — show quarters
         const transformed = quarters.map((q) => {
           const entry = data.find(d => d.quarter === q);
           return {
@@ -70,7 +69,6 @@ export default function SkillGraphView({ skill, onClose }) {
         });
         setGraphData(transformed);
       } else {
-        // Multiple employees — compare across quarters
         const transformed = quarters.map((q) => {
           const entry = { quarter: q };
           employees.forEach(emp => {
@@ -87,7 +85,7 @@ export default function SkillGraphView({ skill, onClose }) {
     }
   };
 
-  const isSingleEmployee = graphData.length > 0 && graphData[0].hasOwnProperty("score");
+  const isSingleEmployee = graphData.length > 0 && Object.prototype.hasOwnProperty.call(graphData[0], "score");
 
   return (
     <Card variant="outlined" sx={{ width: "100%", maxWidth: 900, mx: "auto", mt: 4, p: 2 }}>

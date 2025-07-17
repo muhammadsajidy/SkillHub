@@ -24,14 +24,12 @@ export default function EmployeeGraphView({ employee, onClose }) {
 
   useEffect(() => {
     if (employee?.emp_id) {
-      console.log("Fetching data for employee ID:", employee.emp_id);
       fetchEmployeeData();
     }
   }, [employee]);
 
   const fetchEmployeeData = async () => {
     try {
-      // Fetch employee-specific skills with skill_ids
       const skillsRes = await axios.get(`/skills/employee-skills?empId=${employee.emp_id}`);
       const skillsData = skillsRes.data;
       if (skillsData.length > 0) {
@@ -55,29 +53,27 @@ export default function EmployeeGraphView({ employee, onClose }) {
         setAvailableYears(years);
         setSelectedYear(years[0] || ""); 
         if (skillsData.length > 0) {
-          fetchGraphData(skillNames[0], years[0]);
+          fetchGraphData(skillsData[0].skill_name, years[0]);
         }
       }
     } catch (err) {
-      console.error("Error fetching employee data:", err);
+      console.error(err?.response.data.error || "Error fetching data");
       setGraphData([]);
-    }
+    };
   };
 
   const fetchGraphData = async (skillName, year) => {
     try {
       const skillId = skillIds[skillName];
       if (!skillId) {
-        console.warn("No skill_id found for skill:", skillName);
+        console.log("No data found for the requested skill");
         setGraphData([]);
         return;
       }
       const params = { skill_id: skillId };
       if (year) params.year = year;
-      console.log("Fetching graph data with params:", params);
       const res = await axios.get(`/analytics/employee-growth/${employee.emp_id}`, { params });
       let dataToProcess = Array.isArray(res.data) ? res.data : [res.data];
-      console.log("Raw API response:", dataToProcess);
       const transformedData = dataToProcess
         .filter(item => item.skill_name === skillName)
         .reduce((acc, item) => {
@@ -95,7 +91,6 @@ export default function EmployeeGraphView({ employee, onClose }) {
           const [yearB, quarterB] = b.time.split('-');
           return yearA - yearB || quarterA.localeCompare(quarterB);
         });
-      console.log("Transformed graph data:", transformedData);
       setGraphData(transformedData);
     } catch (err) {
       console.error("Error loading graph data:", err);
@@ -104,11 +99,10 @@ export default function EmployeeGraphView({ employee, onClose }) {
   };
 
   useEffect(() => {
-    console.log("useEffect triggered with selectedSkill:", selectedSkill, "selectedYear:", selectedYear);
     if (selectedSkill && selectedYear) {
       fetchGraphData(selectedSkill, selectedYear);
     } else if (selectedSkill) {
-      fetchGraphData(selectedSkill, null); // All time if no year selected
+      fetchGraphData(selectedSkill, null); 
     }
   }, [selectedSkill, selectedYear]);
 
@@ -123,10 +117,11 @@ export default function EmployeeGraphView({ employee, onClose }) {
             <CloseIcon />
           </IconButton>
         </Box>
-        <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
-          <FormControl sx={{ minWidth: 200 }}>
+        <Box sx={{ display: "flex", gap: 2, mb: 2, justifyContent: "flex-start", my: 2 }}>
+          <FormControl sx={{ minWidth: 200 }} >
             <InputLabel>Skill</InputLabel>
             <Select
+              size="small"
               value={selectedSkill}
               onChange={(e) => setSelectedSkill(e.target.value)}
               label="Skill"
@@ -140,6 +135,7 @@ export default function EmployeeGraphView({ employee, onClose }) {
           <FormControl sx={{ minWidth: 150 }}>
             <InputLabel>Year</InputLabel>
             <Select
+              size="small"
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
               label="Year"

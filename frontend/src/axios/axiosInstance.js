@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: "https://skillhub-backend-efx4.onrender.com/api",
+  baseURL: import.meta.env.VITE_BACKEND_URL,
   timeout: 10000,
 });
 

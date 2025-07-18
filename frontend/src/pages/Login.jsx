@@ -1,5 +1,4 @@
 import axios from "axios";
-import Backend from "../constants/Backend";
 import { Box, Container, Typography, TextField, Button, Paper, IconButton, InputAdornment, MenuItem, } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useState } from "react";
@@ -22,7 +21,7 @@ export default function Login() {
   const { login } = useAuth();
 
   const handleLogin = () => {
-    axios.post(`${Backend}/auth/login`, formData)
+    axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/login`, formData)
     .then((res) => {
       const { token, user } = res.data;
       login({ token, user });

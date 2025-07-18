@@ -92,7 +92,7 @@ export default function Dashboard() {
     };
 
     return (
-        <Container disableGutters maxWidth={false} sx={{ width: "100%", px: { xs: 2, sm: 3, md: 1, lg: 0 } }}> 
+        <Container disableGutters maxWidth={false} sx={{ width: "100%", px: { xs: 2, sm: 3, md: 4 } }}>
             <Box>
                 <Typography variant="h5" fontWeight="bold">Dashboard</Typography>
                 <Typography sx={{ color: "#64748b" }}>Overview of your organization's skill development and performance</Typography>
@@ -114,7 +114,7 @@ export default function Dashboard() {
                         justifyContent: 'flex-start'
                     }}>
                         <Card variant="outlined" sx={{
-                            flex: { xs: "1 1 calc(50% - 8px)", sm: "1 1 calc(50% - 8px)", lg: "1 1 calc(25% - 12px)" },
+                            flex: { xs: "1 1 100%", sm: "1 1 calc(50% - 8px)", lg: "1 1 calc(25% - 12px)" }, // 1 per row on xs, 2 per row on sm, 4 per row on lg
                             paddingX: 2,
                             paddingY: 3,
                             display: "flex",
@@ -131,7 +131,7 @@ export default function Dashboard() {
                             </Box>
                         </Card>
                         <Card variant="outlined" sx={{
-                            flex: { xs: "1 1 calc(50% - 8px)", sm: "1 1 calc(50% - 8px)", lg: "1 1 calc(25% - 12px)" },
+                            flex: { xs: "1 1 100%", sm: "1 1 calc(50% - 8px)", lg: "1 1 calc(25% - 12px)" }, // 1 per row on xs, 2 per row on sm, 4 per row on lg
                             paddingX: 2,
                             paddingY: 3,
                             display: "flex",
@@ -148,7 +148,7 @@ export default function Dashboard() {
                             </Box>
                         </Card>
                         <Card variant="outlined" sx={{
-                            flex: { xs: "1 1 calc(50% - 8px)", sm: "1 1 calc(50% - 8px)", lg: "1 1 calc(25% - 12px)" },
+                            flex: { xs: "1 1 100%", sm: "1 1 calc(50% - 8px)", lg: "1 1 calc(25% - 12px)" }, // 1 per row on xs, 2 per row on sm, 4 per row on lg
                             paddingX: 2,
                             paddingY: 3,
                             display: "flex",
@@ -165,7 +165,7 @@ export default function Dashboard() {
                             </Box>
                         </Card>
                         <Card variant="outlined" sx={{
-                            flex: { xs: "1 1 calc(50% - 8px)", sm: "1 1 calc(50% - 8px)", lg: "1 1 calc(25% - 12px)" },
+                            flex: { xs: "1 1 100%", sm: "1 1 calc(50% - 8px)", lg: "1 1 calc(25% - 12px)" }, // 1 per row on xs, 2 per row on sm, 4 per row on lg
                             paddingX: 2,
                             paddingY: 3,
                             display: "flex",

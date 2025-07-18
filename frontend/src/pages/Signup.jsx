@@ -1,5 +1,4 @@
 import axios from "axios";
-import Backend from "../constants/Backend";
 import {
   Box,
   Container,
@@ -31,7 +30,7 @@ export default function Signup() {
   };
 
   const handleSignup = () => {
-    axios.post(`${Backend}/auth/register`, formData)
+    axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/register`, formData)
     .then((res) => {
         console.log(res.data);
         navigate("/login");

@@ -10,7 +10,7 @@ import analyticsRoutes from "./routes/analyticsRoutes.js";
 const app = e();
 const PORT = 3000;
 app.use((cors({
-    origin: 'http://localhost:5173', 
+    origin: 'https://skillhub-2rem.onrender.com', 
     credentials: true, 
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']

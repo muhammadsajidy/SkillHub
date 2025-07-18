@@ -14,7 +14,8 @@ import {
   Menu,
   MenuItem,
   TextField,
-  Stack
+  Stack,
+  CircularProgress
 } from "@mui/material";
 import { ToastContainer, toast } from "react-toastify";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
@@ -46,28 +47,37 @@ export default function Skills() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [newMaxScore, setNewMaxScore] = useState("");
   const [selectedSkillForGraph, setSelectedSkillForGraph] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchSkills();
   }, []);
 
   const fetchSkills = async () => {
+    setIsLoading(true);
     try {
       const res = await axios.get("/skills/all");
       groupByCategory(res.data);
     } catch (err) {
-      toast.error(err?.response?.data.message || "Failed to fetch skills" );
+      toast.error(err?.response?.data.message || "Failed to fetch skills");
+      setGroupedSkills({});
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const addSkill = async () => {
+    setIsLoading(true);
     try {
       await axios.post("/skills/add", { skillName, skillCategory });
+      toast.success("Skill added successfully");
       fetchSkills();
       handleClose();
     } catch (err) {
       toast.error(err?.response?.data.message || "Failed to add skill");
-    };
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const groupByCategory = (data) => {
@@ -94,7 +104,7 @@ export default function Skills() {
   };
 
   const handleMenuClick = (event, skill) => {
-    event.stopPropagation(); 
+    event.stopPropagation();
     setAnchorEl(event.currentTarget);
     setSelectedSkill(skill);
   };
@@ -112,6 +122,7 @@ export default function Skills() {
   };
 
   const handleDeleteSkill = async () => {
+    setIsLoading(true);
     try {
       await axios.delete(`/skills/remove/${selectedSkill.skill_id}`);
       toast.success("Skill deleted successfully");
@@ -121,11 +132,13 @@ export default function Skills() {
     } finally {
       handleMenuClose();
       setSelectedSkill(null);
+      setIsLoading(false);
     }
   };
 
   const handleEditSkillLevel = async () => {
     if (!selectedSkill) return;
+    setIsLoading(true);
     try {
       await axios.put(`/skills/edit/${selectedSkill.skill_id}`, { max_score: newMaxScore });
       toast.success("Skill level updated successfully");
@@ -134,6 +147,7 @@ export default function Skills() {
       toast.error(err?.response?.data?.message || "Error updating skill level");
     } finally {
       handleEditModalClose();
+      setIsLoading(false);
     }
   };
 
@@ -158,7 +172,7 @@ export default function Skills() {
   };
 
   return (
-    <Container disableGutters maxWidth={false} sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 4 }}>
+    <Container disableGutters maxWidth={false} sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 4, px: { xs: 2, sm: 3, md: 4, lg: 0 } }}>
       {selectedSkillForGraph ? (
         <SkillGraphView skill={selectedSkillForGraph} onClose={handleGraphViewClose} />
       ) : (
@@ -191,43 +205,56 @@ export default function Skills() {
               });
               setGroupedSkills(filtered);
             }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              )
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                )
+              }
             }}
           />
 
-          {Object.entries(groupedSkills).map(([category, skills]) => (
-            <Card key={category} variant="outlined">
-              <CardContent>
-                <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>{category}</Typography>
-                <Grid container spacing={2}>
-                  {skills.map((skill) => (
-                    <Grid size = {{ xs: 12, md: 4 }} key={skill.skill_id}>
-                      <Card
-                        variant="outlined"
-                        sx={{ p: 2, ":hover": { bgcolor: "#f9fafb", cursor: "pointer" }, width: "100%" }}
-                        onClick={() => handleSkillCardClick(skill)}
-                      >
-                        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <Typography fontWeight="medium">{skill.skill_name}</Typography>
-                          <IconButton size="small" onClick={(e) => handleMenuClick(e, skill)}>
-                            <MoreVertIcon fontSize="small" />
-                          </IconButton>
-                        </Box>
-                        <Typography fontSize={14} sx={{ color: "gray" }}>
-                          {skill.employee_count || 0} employee{(skill.employee_count || 0) !== 1 ? "s" : ""}
-                        </Typography>
-                      </Card>
+          {isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+              <CircularProgress />
+              <Typography ml={2}>Loading skills...</Typography>
+            </Box>
+          ) : (
+            Object.keys(groupedSkills).length > 0 ? (
+              Object.entries(groupedSkills).map(([category, skills]) => (
+                <Card key={category} variant="outlined">
+                  <CardContent>
+                    <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>{category}</Typography>
+                    <Grid container spacing={2}>
+                      {skills.map((skill) => (
+                        <Grid size={{ xs: 6, md: 4 }} key={skill.skill_id}> 
+                          <Card
+                            variant="outlined"
+                            sx={{ p: 2, ":hover": { bgcolor: "#f9fafb", cursor: "pointer" }, width: "100%" }}
+                            onClick={() => handleSkillCardClick(skill)}
+                          >
+                            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <Typography fontWeight="medium">{skill.skill_name}</Typography>
+                              <IconButton size="small" onClick={(e) => handleMenuClick(e, skill)}>
+                                <MoreVertIcon fontSize="small" />
+                              </IconButton>
+                            </Box>
+                            <Typography fontSize={14} sx={{ color: "gray" }}>
+                              {skill.employee_count || 0} employee{(skill.employee_count || 0) !== 1 ? "s" : ""}
+                            </Typography>
+                          </Card>
+                        </Grid>
+                      ))}
                     </Grid>
-                  ))}
-                </Grid>
-              </CardContent>
-            </Card>
-          ))}
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <Typography variant="p" sx={{ width: "100%", textAlign: "center", marginY: 2, color: "#64748b" }}>No skills found</Typography>
+            )
+          )}
 
           <Modal open={open} onClose={handleClose}>
             <Box sx={modalStyle}>
@@ -237,7 +264,7 @@ export default function Skills() {
               <Stack direction="row" justifyContent="center" spacing={2} mt={2}>
                 <Button onClick={handleClose} variant="outlined" color="inherit">Cancel</Button>
                 <Button onClick={handleClear} variant="outlined" color="warning">Clear</Button>
-                <Button onClick={addSkill} variant="contained" color="primary">Add</Button>
+                <Button onClick={addSkill} variant="contained" sx={{ bgcolor: "black" }}>Add</Button>
               </Stack>
             </Box>
           </Modal>
@@ -248,12 +275,14 @@ export default function Skills() {
             onClose={handleMenuClose}
             anchorOrigin={{ vertical: "top", horizontal: "left" }}
             transformOrigin={{ vertical: "top", horizontal: "right" }}
-            PaperProps={{
-              sx: {
-                boxShadow: "none",
-                border: "1px solid #e0e0e0",
-                minWidth: 120,
-              },
+            slotProps={{
+              paper: {
+                sx: {
+                  boxShadow: "none",
+                  border: "1px solid #e0e0e0",
+                  minWidth: 120,
+                },
+              }
             }}
           >
             <MenuItem onClick={handleEditSkill}>Edit</MenuItem>
@@ -261,7 +290,6 @@ export default function Skills() {
             <MenuItem onClick={handleViewGraph}>View Graph</MenuItem>
           </Menu>
 
-          {/* Edit Skill Modal */}
           <Modal open={editModalOpen} onClose={handleEditModalClose}>
             <Box sx={modalStyle}>
               <Typography variant="h6" fontWeight="bold">Edit Skill</Typography>
@@ -275,7 +303,7 @@ export default function Skills() {
               />
               <Stack direction="row" justifyContent="center" spacing={2} mt={2}>
                 <Button onClick={handleEditModalClose} variant="outlined" color="inherit">Cancel</Button>
-                <Button onClick={handleEditSkillLevel} variant="contained" color="primary">Update</Button>
+                <Button onClick={handleEditSkillLevel} variant="contained" sx={{ bgcolor: "black" }}>Update</Button>
               </Stack>
             </Box>
           </Modal>
@@ -284,4 +312,4 @@ export default function Skills() {
       <ToastContainer position="top-right" hideProgressBar autoClose={500} />
     </Container>
   );
-};
+}

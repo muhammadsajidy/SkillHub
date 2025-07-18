@@ -8,7 +8,8 @@ import {
   MenuItem,
   Select,
   FormControl,
-  InputLabel
+  InputLabel,
+  CircularProgress
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import {
@@ -26,6 +27,8 @@ export default function SkillGraphView({ skill, onClose }) {
   const [graphData, setGraphData] = useState([]);
   const [yearOptions, setYearOptions] = useState([]);
   const [selectedYear, setSelectedYear] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [employeeNames, setEmployeeNames] = useState([]); // To store employee names
 
   useEffect(() => {
     fetchYearOptions();
@@ -38,6 +41,7 @@ export default function SkillGraphView({ skill, onClose }) {
   }, [skill, selectedYear]);
 
   const fetchYearOptions = async () => {
+    setIsLoading(true);
     try {
       const res = await axios.get("/evaluations/years");
       const years = res.data;
@@ -48,30 +52,37 @@ export default function SkillGraphView({ skill, onClose }) {
       console.error("Failed to fetch years:", err);
       setYearOptions(["all"]);
       setSelectedYear("all");
+      setGraphData([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const fetchGraphData = async (skillId, year) => {
+    setIsLoading(true);
     try {
       const res = await axios.get(`/employees/by-skill?skillId=${skillId}&year=${year}`);
       const data = res.data;
 
-      const employees = [...new Set(data.map(item => item.emp_name))];
+      const uniqueEmployeeNames = [...new Set(data.map(item => item.emp_name))];
+      setEmployeeNames(uniqueEmployeeNames); // Store unique employee names
+
       const quarters = ["Q1", "Q2", "Q3", "Q4"];
 
-      if (employees.length === 1) {
+      if (uniqueEmployeeNames.length === 1) {
         const transformed = quarters.map((q) => {
           const entry = data.find(d => d.quarter === q);
           return {
             quarter: q,
             score: entry ? parseFloat(entry.score) : 0,
+            employeeName: uniqueEmployeeNames[0] // Add employee name directly for single employee
           };
         });
         setGraphData(transformed);
       } else {
         const transformed = quarters.map((q) => {
           const entry = { quarter: q };
-          employees.forEach(emp => {
+          uniqueEmployeeNames.forEach(emp => {
             const found = data.find(d => d.emp_name === emp && d.quarter === q);
             entry[emp] = found ? parseFloat(found.score) : 0;
           });
@@ -82,10 +93,12 @@ export default function SkillGraphView({ skill, onClose }) {
     } catch (err) {
       console.error("Error fetching skill graph data:", err);
       setGraphData([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const isSingleEmployee = graphData.length > 0 && Object.prototype.hasOwnProperty.call(graphData[0], "score");
+  const isSingleEmployee = employeeNames.length === 1;
 
   return (
     <Card variant="outlined" sx={{ width: "100%", maxWidth: 900, mx: "auto", mt: 4, p: 2 }}>
@@ -113,26 +126,33 @@ export default function SkillGraphView({ skill, onClose }) {
           </Select>
         </FormControl>
 
-        {graphData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={400}>
-            <BarChart data={graphData}>
-              <XAxis dataKey="quarter" />
-              <YAxis domain={[0, 10]} />
-              <Tooltip />
-              <Legend />
-              {isSingleEmployee ? (
-                <Bar dataKey="score" name="Score" fill="#1976d2" />
-              ) : (
-                Object.keys(graphData[0])
-                  .filter(key => key !== "quarter")
-                  .map((key, i) => (
-                    <Bar key={key} dataKey={key} name={key} fill={`hsl(${i * 60}, 70%, 50%)`} />
-                  ))
-              )}
-            </BarChart>
-          </ResponsiveContainer>
+        {isLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px' }}>
+            <CircularProgress />
+            <Typography ml={2}>Loading graph data...</Typography>
+          </Box>
         ) : (
-          <Typography>No data available for this skill</Typography>
+          graphData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart data={graphData}>
+                <XAxis dataKey="quarter" />
+                <YAxis domain={[0, 10]} />
+                <Tooltip />
+                <Legend wrapperStyle={{ fontSize: '12px' }} /> {/* Keep legend always to ensure consistent spacing if it appears and to show skill's single name, if needed, or employee's single name */}
+                {isSingleEmployee ? (
+                  <Bar dataKey="score" name={employeeNames[0]} fill="#1976d2" /> // Use employee's name here
+                ) : (
+                  Object.keys(graphData[0])
+                    .filter(key => key !== "quarter")
+                    .map((key, i) => (
+                      <Bar key={key} dataKey={key} name={key} fill={`hsl(${i * 60}, 70%, 50%)`} />
+                    ))
+                )}
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <Typography>No data available for this skill in the selected year.</Typography>
+          )
         )}
       </CardContent>
     </Card>

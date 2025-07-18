@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "../axios/axiosInstance";
-import { Box, Button, Card, Container, InputLabel, FormControl, MenuItem, Modal, Pagination, Select, Stack, Table, TableBody, TableContainer, TableCell, TableHead, TableRow, TableSortLabel, TextField, Typography } from "@mui/material";
+import { Box, Button, Card, Container, InputLabel, FormControl, MenuItem, Modal, Pagination, Select, Stack, Table, TableBody, TableContainer, TableCell, TableHead, TableRow, TableSortLabel, TextField, Typography, CircularProgress } from "@mui/material";
 import { Autocomplete } from "@mui/material";
 import { ToastContainer, toast } from "react-toastify";
 
@@ -37,13 +37,14 @@ export default function Assessments() {
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('');
 
-  const [formData, setFormData] = useState({ 
-    score: "", quarter: "", year: "", comment: "" 
+  const [formData, setFormData] = useState({
+    score: "", quarter: "", year: "", comment: ""
   });
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editData, setEditData] = useState(null);
 
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchEmployees();
@@ -53,49 +54,61 @@ export default function Assessments() {
 
   useEffect(() => {
     fetchData();
-  }, [page, selectedEmpId, selectedDept, selectedSkill]);
+  }, [page, selectedEmpId, selectedDept, selectedSkill, order, orderBy]);
 
   const fetchEmployees = async () => {
-    await axios.get("/employees/all")
-    .then((res) => setEmployees(res.data))
-    .catch((e) => toast.error(e?.response.data.error));
+    try {
+      const res = await axios.get("/employees/all");
+      setEmployees(res.data);
+    } catch (e) {
+      toast.error(e?.response.data.error);
+    }
   };
 
   const fetchDepartments = async () => {
-    await axios.get("/departments/all")
-    .then((res) => setDepartments(res.data))
-    .catch((e) => toast.error(e?.response.data.error));
+    try {
+      const res = await axios.get("/departments/all");
+      setDepartments(res.data);
+    } catch (e) {
+      toast.error(e?.response.data.error);
+    }
   };
 
   const fetchSkills = async () => {
-    await axios.get("/skills/all")
-    .then((res) => setSkills(res.data))
-    .catch((e) => toast.error(e?.response.data.error));
+    try {
+      const res = await axios.get("/skills/all");
+      setSkills(res.data);
+    } catch (e) {
+      toast.error(e?.response.data.error);
+    }
   };
 
   const fetchSkillEvaluations = async (pageNumber) => {
+    setIsLoading(true);
     const offset = (pageNumber - 1) * LIMIT;
-    await axios.get("/evaluations/details", {
-      params: {
-        limit: LIMIT,
-        offset: offset,
-        sortBy: orderBy || 'year',
-        order: order || 'asc',      
-      }
-    })
-    .then((res) => {
-      console.log(res.data.result);
+    try {
+      const res = await axios.get("/evaluations/details", {
+        params: {
+          limit: LIMIT,
+          offset: offset,
+          sortBy: orderBy || 'year',
+          order: order || 'asc',
+        }
+      });
       setResults(res.data?.result || []);
       const totalCount = res.data?.dataSize?.[0]?.count || 0;
       setPages(totalCount > 0 ? Math.ceil(totalCount / LIMIT) : 1);
-    }).catch((e) => {
+    } catch (e) {
       toast.error(e?.response.data.error);
       setResults([]);
       setPages(1);
-    });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const fetchData = async () => {
+    setIsLoading(true);
     if (!selectedEmpId && !selectedDept && !selectedSkill) {
       await fetchSkillEvaluations(page);
       return;
@@ -109,11 +122,14 @@ export default function Assessments() {
         }
       });
       setResults(res?.data || []);
+      setPages(1);
     } catch (e) {
       toast.error(e?.response.data.error);
       setResults([]);
       setPages(1);
-    };
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handlePageChange = (_, value) => {
@@ -126,26 +142,29 @@ export default function Assessments() {
     setSelectedDept('');
     setSelectedSkill('');
     setPage(1);
+    setOrder('asc');
+    setOrderBy('');
   };
 
   const handleSubmit = async () => {
-    await axios.post("/evaluations/add", formData, {
-      params: {
-        empId: selectedEmpId,
-        skillId: selectedSkillId,
-      }
-    }).then((res) => {
+    setIsLoading(true);
+    try {
+      const res = await axios.post("/evaluations/add", formData, {
+        params: {
+          empId: selectedEmpId,
+          skillId: selectedSkillId,
+        }
+      });
       toast.success(res.data.message || "Evaluation added successfully!");
       setModalOpen(false);
       fetchSkillEvaluations(1);
       resetForm();
-    }).catch((e) => {
+    } catch (e) {
       console.error(e);
       toast.error(e?.response.data.error);
-      setModalOpen(false);
-      fetchSkillEvaluations(1);
-      resetForm();
-    });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDeptChange = (value) => {
@@ -168,22 +187,26 @@ export default function Assessments() {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
+    setPage(1);
   };
 
   const handleDelete = async (evalId) => {
-    await axios.delete(`/evaluations/remove/${evalId}`)
-    .then((res) => {
+    setIsLoading(true);
+    try {
+      const res = await axios.delete(`/evaluations/remove/${evalId}`);
       toast.success(res.data.message || "Evaluation deleted successfully!");
       fetchSkillEvaluations(page);
-    }
-    ).catch((e) => {
+    } catch (e) {
       console.error(e);
       toast.error(e?.response.data.error);
-    });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleUpdate = async () => {
     if (!editData) return;
+    setIsLoading(true);
 
     try {
       await axios.put(`/evaluations/update/${editData.eval_id}`, {
@@ -200,6 +223,8 @@ export default function Assessments() {
     } catch (e) {
       toast.error(e?.response?.data?.message || "Update failed");
       console.error(e);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -209,35 +234,49 @@ export default function Assessments() {
   };
 
   return (
-    <Container disableGutters maxWidth={false} sx={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-      <Box sx={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Box>
+    <Container disableGutters maxWidth={false} sx={{ width: "100%", display: "flex", flexDirection: "column", justifyContent: "center", px: { xs: 2, sm: 3, md: 1, lg: 0 } }}>
+      <Box sx={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 3 }}>
+        <Box sx={{ flexGrow: 1, pr: { xs: 0, sm: 2 }, maxWidth: { xs: 'calc(100% - 120px)', sm: 'auto' } }}> 
           <Typography variant="h5" fontWeight="bold">Assessments</Typography>
-          <Typography sx={{ color: "#64748b" }}>Review and evaluate employee performance across key skills</Typography>
+          <Typography sx={{ color: "#64748b" }}>
+            Review and evaluate employee performance across key skills
+          </Typography>
         </Box>
-        <Button variant="contained" size="small" sx={{ bgcolor: "black" }} onClick={() => setModalOpen(true)}>Add Evaluation</Button>
+        <Button variant="contained" size="small" sx={{ bgcolor: "black", flexShrink: 0 }} onClick={() => setModalOpen(true)}>
+          Add Evaluation
+        </Button>
       </Box>
 
-      <Box sx={{ width: "100%", marginY: 3, display: "flex", alignItems: "center", flexWrap: { xs: "wrap", lg: "nowrap" }, gap: 2 }}>
-        <Autocomplete options={employees} getOptionLabel={(option) => option.emp_name} value={employees.find((emp) => emp.emp_id === selectedEmpId) || null} onChange={(_, newValue) => { setSelectedEmpId(newValue?.emp_id || ''); setEmpName(newValue?.emp_name || ''); setPage(1); }} renderInput={(params) => (<TextField {...params} placeholder="Search employees..." size="small" />)} sx={{ width: { xs: "100%", lg: "50%" } }} />
-        <FormControl sx={{ minWidth: { xs: "40%", sm: "41%", lg: 180} }} size="small">
+      <Box sx={{ width: "100%", mb: 2 }}>
+        <Autocomplete
+          options={employees}
+          getOptionLabel={(option) => option.emp_name}
+          value={employees.find((emp) => emp.emp_id === selectedEmpId) || null}
+          onChange={(_, newValue) => { setSelectedEmpId(newValue?.emp_id || ''); setEmpName(newValue?.emp_name || ''); setPage(1); }}
+          renderInput={(params) => (<TextField {...params} placeholder="Search employees..." size="small" fullWidth />)}
+          sx={{ width: "100%" }} 
+        />
+      </Box>
+
+      <Box sx={{ width: "100%", marginY: 0, display: "flex", alignItems: "center", flexWrap: { xs: "wrap", md: "nowrap" }, gap: 2 }}>
+        <FormControl sx={{ flexGrow: 1, minWidth: { xs: "calc(50% - 8px)", md: 120 } }} size="small"> 
           <InputLabel>Department</InputLabel>
-          <Select value={selectedDept} label="Department" onChange={(e) => handleDeptChange(e.target.value)} MenuProps={{ PaperProps: { style: { maxHeight: 200, minHeight: 100, maxWidth: { xs: "30%" } } } }}>
+          <Select value={selectedDept} label="Department" onChange={(e) => handleDeptChange(e.target.value)} MenuProps={{ PaperProps: { style: { maxHeight: 200, minHeight: 100 } } }}>
             <MenuItem value="">All</MenuItem>
             {departments?.map((department, index) => (<MenuItem key={index} value={department.dept_name}>{department?.dept_name}</MenuItem>))}
           </Select>
         </FormControl>
-        <FormControl sx={{ minWidth: { xs: "30%", sm: "42%", lg: 180} }} size="small">
+        <FormControl sx={{ flexGrow: 1, minWidth: { xs: "calc(50% - 8px)", md: 120 } }} size="small"> 
           <InputLabel>Skill</InputLabel>
           <Select value={selectedSkill} label="Skill" onChange={(e) => handleSkillChange(e.target.value)} MenuProps={{ PaperProps: { style: { maxHeight: 200, minHeight: 100 } } }}>
             <MenuItem value="">None</MenuItem>
             {skills?.map((skill, index) => (<MenuItem key={index} value={skill.skill_name}>{skill?.skill_name}</MenuItem>))}
           </Select>
         </FormControl>
-        <Button variant="outlined" sx={{ textTransform: "none", height: 40 }} onClick={handleClearSearch}>Clear</Button>
+        <Button variant="outlined" sx={{ textTransform: "none", height: 40, flexShrink: 0, width: { xs: "100%", sm: "auto" } }} onClick={handleClearSearch}>Clear</Button>
       </Box>
 
-      <TableContainer component={Card} variant="outlined">
+      <TableContainer component={Card} variant="outlined" sx={{ mt: 3 }}> 
         <Table sx={{ minWidth: 600 }} aria-label="employee table">
           <TableHead>
             <TableRow>
@@ -265,37 +304,56 @@ export default function Assessments() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {[...results].sort(getComparator(order, orderBy)).map((detail, index) => (
-              <TableRow key={index}>
-                <TableCell>{detail?.emp_name}</TableCell>
-                <TableCell>{detail?.dept_name}</TableCell>
-                <TableCell>{detail?.skill_name}</TableCell>
-                <TableCell>{detail?.skill_level}</TableCell>
-                <TableCell align="center">{detail?.score}</TableCell>
-                <TableCell align="center">{detail?.max_score}</TableCell>
-                <TableCell align="center">{detail?.quarter}</TableCell>
-                <TableCell>{detail?.year}</TableCell>
-                <TableCell align="center">
-                  <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 1 }}>
-                    <Button variant="outlined" size="small" sx={{ textTransform: "none" }} onClick={() => handleEditClick(detail)}>Edit</Button>
-                    <Button variant="contained" size="small" sx={{ textTransform: "none" }} onClick={() => handleDelete(detail?.eval_id)}>Delete</Button>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={9} align="center">
+                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '150px' }}>
+                    <CircularProgress />
+                    <Typography ml={2}>Loading evaluations...</Typography>
                   </Box>
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              results.length > 0 ? (
+                [...results].sort(getComparator(order, orderBy)).map((detail, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{detail?.emp_name}</TableCell>
+                    <TableCell>{detail?.dept_name}</TableCell>
+                    <TableCell>{detail?.skill_name}</TableCell>
+                    <TableCell>{detail?.skill_level}</TableCell>
+                    <TableCell align="center">{detail?.score}</TableCell>
+                    <TableCell align="center">{detail?.max_score}</TableCell>
+                    <TableCell align="center">{detail?.quarter}</TableCell>
+                    <TableCell>{detail?.year}</TableCell>
+                    <TableCell align="center">
+                      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 1 }}>
+                        <Button variant="outlined" size="small" sx={{ textTransform: "none" }} onClick={() => handleEditClick(detail)}>Edit</Button>
+                        <Button variant="contained" size="small" sx={{ textTransform: "none" }} onClick={() => handleDelete(detail?.eval_id)}>Delete</Button>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={9} align="center">
+                    <Typography sx={{ textAlign: "center", my: 3, color: "#64748b" }}>
+                      {empName.trim() ? "No results found for the given employee name." : "No results found."}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )
+            )}
           </TableBody>
         </Table>
       </TableContainer>
 
-      {results.length > 0 ? 
-      <Stack sx={{ my: 3 }} alignItems="center">
-        {(!selectedDept && !selectedSkill && !selectedEmpId) && (
-          <Pagination count={pages} page={page} onChange={handlePageChange} variant="outlined" shape="rounded" />
-        )}
-      </Stack> :
-      <Typography sx={{ textAlign: "center", my: 3, color: "#64748b" }}>
-        {empName.trim() ? "No results found for the given employee name." : "No results found."}
-      </Typography>}
+      {results.length > 0 && !isLoading && (
+        <Stack sx={{ my: 3 }} alignItems="center">
+          {(!selectedDept && !selectedSkill && !selectedEmpId) && (
+            <Pagination count={pages} page={page} onChange={handlePageChange} variant="outlined" shape="rounded" />
+          )}
+        </Stack>
+      )}
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)}>
         <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 500, bgcolor: 'background.paper', borderRadius: 2, boxShadow: 24, p: 4, maxHeight: "90vh", overflowY: "auto" }}>

@@ -142,7 +142,7 @@ export default function Layout({ children }) {
 
             <Box sx={{ flexGrow: 1 }} />
 
-            <Box sx={{ display: 'flex', alignItems: 'center', pr: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <IconButton onClick={handleAvatarClick}>
                 <Avatar alt="User" src="" sx={{ width: 32, height: 32 }} />
               </IconButton>

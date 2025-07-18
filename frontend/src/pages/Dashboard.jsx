@@ -92,7 +92,7 @@ export default function Dashboard() {
     };
 
     return (
-        <Container disableGutters maxWidth={false} sx={{ width: "100%", px: { xs: 2, sm: 3, md: 4 } }}>
+        <Container disableGutters maxWidth={false} sx={{ width: "100%", px: { xs: 2, sm: 3, md: 1, lg: 0 } }}>
             <Box>
                 <Typography variant="h5" fontWeight="bold">Dashboard</Typography>
                 <Typography sx={{ color: "#64748b" }}>Overview of your organization's skill development and performance</Typography>

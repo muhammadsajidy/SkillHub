@@ -1,3 +1,3 @@
-const Backend = "http://localhost:3000/api";
+const Backend = "https://skillhub-backend-efx4.onrender.com/api";
 
 export default Backend;
